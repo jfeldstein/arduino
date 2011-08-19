@@ -1,5 +1,6 @@
 #include <RGBHueCycle.h>
 #include <RGBStrober.h>
+#include <Stripes.h>
 
 // constants won't change. They're used here to 
 // set pin numbers:
@@ -7,8 +8,9 @@ const int buttonPin = 2;     // the number of the pushbutton pin
 const int REDPin = 9;
 const int GREENPin = 10;
 const int BLUEPin = 11;
-RGBStrober rgbStrober(REDPin, BLUEPin, GREENPin, 10);
+RGBStrober rgbStrober(REDPin, BLUEPin, GREENPin, 6); // 6 is the longest that doesn't flicker
 RGBHueCycle rgbHueCycle(REDPin, 5);
+Stripes stripes(REDPin, 500); // First pin and stripe length
 
 // Button
 int buttonState = 0;         // current command state
@@ -78,7 +80,8 @@ void loop(){
       rgbHueCycle.interrupt();
       break;
     case 3:
-      turquoise();
+      stripes.setCandyCanePattern();
+      stripes.interrupt();
       break;
     case 4:
       orange();
