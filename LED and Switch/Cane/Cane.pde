@@ -8,14 +8,18 @@ const int buttonPin = 2;     // the number of the pushbutton pin
 const int LeftRedPin = 9;
 const int RightRedPin = 3;
 const int UVPin = 7;
-RGBHueCycle rgbHueCycle(5, 150);
+ClickButton button(buttonPin);
+RGBHueCycle rgbHueCycle(5, 150, 5);
 Stripes stripes(500); // Defaul stripe length
 
 // Button
-ClickButton button(buttonPin);
+//ClickButton button(buttonPin, LOW);
 int buttonState = 0;         // current command state
 int lastButtonState = 0;     // checked against for changes in command state
-
+const int BTN_CLICKED = 1;
+const int BTN_DOUBLECLICKED = 2;
+const int BTN_HOLD = 3;
+const int BTN_LONG_HOLD = 4;
 
 // LEDs
 int ledState = 0; // off
@@ -35,20 +39,27 @@ void setup() {
   pinMode(UVPin, OUTPUT);
   
   // initialize the pushbutton pin as an input:
-  pinMode(buttonPin, INPUT);    
+  pinMode(buttonPin, INPUT);
   Serial.begin(9600); 
 }
 
 void loop(){
   // read the state of the pushbutton value:
-  int buttonState = button.Update();
+  int buttonState = button.check();
   
-  if(buttonState == CLICK_SINGLECLICKED)
+  //Serial.println(buttonState);
+  //delay(10);
+  
+  if(buttonState == BTN_CLICKED)
   {
     ledState = ledState+1;
     if(ledState > maxLedState) {
       ledState = 0;
     }
+    
+    stripes.resetState();
+    rgbHueCycle.resetState();
+    
     Serial.println(ledState);
   }
   
@@ -58,34 +69,33 @@ void loop(){
       allLedsOff();
       break;
     case 1:
-      if(buttonState == CLICK_SINGLECLICKED) stripes.setRGBStrobe();
-      if(buttonState == CLICK_SINGLEHOLD ) stripes.setTOMStrobe();
-      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setWhiteStrobe();
+      if(buttonState == BTN_CLICKED) stripes.setRGBStrobe();
+      if(buttonState == BTN_HOLD ) stripes.setTOMStrobe();
+      if(buttonState == BTN_LONG_HOLD ) stripes.setWhiteStrobe();
       
       rgb = stripes.getRGB();
       writeBothRGB(rgb);
 
       break;
     case 2:
-      if(buttonState != CLICK_SINGLECLICKED) rgbHueCycle.reset();
-      if(buttonState == CLICK_SINGLEHOLD)   rgbHueCycle.toggleStripes();
-      if(buttonState == CLICK_DOUBLEHOLD && lastButtonState != CLICK_DOUBLEHOLD) rgbHueCycle.restartColorPicker();
-      if(buttonState == CLICK_DOUBLEHOLD) rgbHueCycle.updateRGB();
+      if(buttonState == BTN_HOLD)   rgbHueCycle.toggleStripes();
+      if(buttonState == BTN_LONG_HOLD && lastButtonState != BTN_LONG_HOLD) rgbHueCycle.restartColorPicker();
+      if(buttonState == BTN_LONG_HOLD) rgbHueCycle.updateRGB();
       
       writeBothRGB(rgbHueCycle.interrupt());
 
       break;
     case 3:
-      if(buttonState == CLICK_SINGLECLICKED) stripes.setWhite();
-      if(buttonState == CLICK_SINGLEHOLD ) stripes.setCandyCane();
-      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setAltCandyCane();
+      if(buttonState == BTN_CLICKED) stripes.setWhite();
+      if(buttonState == BTN_HOLD ) stripes.setCandyCane();
+      if(buttonState == BTN_LONG_HOLD ) stripes.setAltCandyCane();
 
       writeBothRGB(stripes.getRGB());
       break;
     case 4:
-      if(buttonState == CLICK_SINGLECLICKED) stripes.setGreen();
-      if(buttonState == CLICK_SINGLEHOLD ) stripes.setTurqGreenStripe();
-      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setTurq();
+      if(buttonState == BTN_CLICKED) stripes.setGreen();
+      if(buttonState == BTN_HOLD ) stripes.setTurqGreenStripe();
+      if(buttonState == BTN_LONG_HOLD ) stripes.setTurq();
 
       writeBothRGB(stripes.getRGB());
       break;
