@@ -1,37 +1,38 @@
+#include <ClickButton.h>
 #include <RGBHueCycle.h>
-#include <RGBStrober.h>
 #include <Stripes.h>
 
 // constants won't change. They're used here to 
 // set pin numbers:
 const int buttonPin = 2;     // the number of the pushbutton pin
-const int REDPin = 9;
-const int GREENPin = 10;
-const int BLUEPin = 11;
-RGBStrober rgbStrober(REDPin, BLUEPin, GREENPin, 6); // 6 is the longest that doesn't flicker
-RGBHueCycle rgbHueCycle(REDPin, 5);
-Stripes stripes(REDPin, 500); // First pin and stripe length
+const int LeftRedPin = 9;
+const int RightRedPin = 3;
+const int UVPin = 7;
+RGBHueCycle rgbHueCycle(5, 150);
+Stripes stripes(500); // Defaul stripe length
 
 // Button
+ClickButton button(buttonPin);
 int buttonState = 0;         // current command state
 int lastButtonState = 0;     // checked against for changes in command state
 
-// Debounce
-// the following variables are long's because the time, measured in miliseconds,
-// will quickly become a bigger number than can be stored in an int.
-long lastDebounceTime = 0;  // the last time the output pin was toggled
-long debounceDelay = 50;    // the debounce time; increase if the output flickers
-int lastReading = 0;
 
 // LEDs
 int ledState = 0; // off
-int maxLedState = 5;
+int maxLedState = 4;
+long* rgb;
 
 void setup() {
   // initialize the LED pins as outputs:
-  pinMode(REDPin, OUTPUT);
-  pinMode(BLUEPin, OUTPUT);
-  pinMode(GREENPin, OUTPUT);
+  pinMode(LeftRedPin+0, OUTPUT);
+  pinMode(LeftRedPin+1, OUTPUT);
+  pinMode(LeftRedPin+2, OUTPUT);
+  
+  pinMode(RightRedPin+0, OUTPUT);
+  pinMode(RightRedPin+1, OUTPUT);
+  pinMode(RightRedPin+2, OUTPUT);
+  
+  pinMode(UVPin, OUTPUT);
   
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);    
@@ -40,32 +41,15 @@ void setup() {
 
 void loop(){
   // read the state of the pushbutton value:
-  int reading = digitalRead(buttonPin);
-
-  // If button has changed this loop, reset counter
-  if(reading != lastReading)
-  {
-    lastDebounceTime = millis();
-  }  
+  int buttonState = button.Update();
   
-  // Button has stayed the same for long enough for us to say 
-  //  that the button is either pushed or released, not bouncing
-  if((millis() - lastDebounceTime) > debounceDelay) {
-    buttonState = reading;
-  }
-  
-  if(buttonState != lastButtonState)
+  if(buttonState == CLICK_SINGLECLICKED)
   {
-    lastButtonState = buttonState;
-    
-    if(buttonState == HIGH)
-    {
-      ledState = ledState+1;
-      if(ledState > maxLedState) {
-        ledState = 0;
-      }
-      Serial.println(ledState);
+    ledState = ledState+1;
+    if(ledState > maxLedState) {
+      ledState = 0;
     }
+    Serial.println(ledState);
   }
   
   switch(ledState)
@@ -74,49 +58,58 @@ void loop(){
       allLedsOff();
       break;
     case 1:
-      rgbStrober.interrupt();
+      if(buttonState == CLICK_SINGLECLICKED) stripes.setRGBStrobe();
+      if(buttonState == CLICK_SINGLEHOLD ) stripes.setTOMStrobe();
+      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setWhiteStrobe();
+      
+      rgb = stripes.getRGB();
+      writeBothRGB(rgb);
+
       break;
     case 2:
-      rgbHueCycle.interrupt();
+      if(buttonState != CLICK_SINGLECLICKED) rgbHueCycle.reset();
+      if(buttonState == CLICK_SINGLEHOLD)   rgbHueCycle.toggleStripes();
+      if(buttonState == CLICK_DOUBLEHOLD && lastButtonState != CLICK_DOUBLEHOLD) rgbHueCycle.restartColorPicker();
+      if(buttonState == CLICK_DOUBLEHOLD) rgbHueCycle.updateRGB();
+      
+      writeBothRGB(rgbHueCycle.interrupt());
+
       break;
     case 3:
-      stripes.setCandyCanePattern();
-      stripes.interrupt();
+      if(buttonState == CLICK_SINGLECLICKED) stripes.setWhite();
+      if(buttonState == CLICK_SINGLEHOLD ) stripes.setCandyCane();
+      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setAltCandyCane();
+
+      writeBothRGB(stripes.getRGB());
       break;
     case 4:
-      orange();
-      break;
-    case 5:
-      magenta();
+      if(buttonState == CLICK_SINGLECLICKED) stripes.setGreen();
+      if(buttonState == CLICK_SINGLEHOLD ) stripes.setTurqGreenStripe();
+      if(buttonState == CLICK_DOUBLEHOLD ) stripes.setTurq();
+
+      writeBothRGB(stripes.getRGB());
       break;
   }
   
-  lastReading = reading;
+  lastButtonState = buttonState;
 }
 
 void allLedsOff(){
-  digitalWrite(REDPin, LOW);
-  digitalWrite(BLUEPin, LOW);
-  digitalWrite(GREENPin, LOW);
+  long off[3] = {0,0,0};
+  writeBothRGB(off);
 }
 
-void turquoise() {
-  int rgb[3] = {0,206, 209};
-  writeRGB(rgb);
-}
-
-void orange() {
-  int rgb[3] = {215, 250, 0};//{255, 165, 0};
-  writeRGB(rgb);
-}
-
-void magenta() {
-  int rgb[3] = {200, 0, 255};//{139, 0, 139};
-  writeRGB(rgb);
-}
-
-void writeRGB(int* rgb){
-    for (int k=0; k<3; k++) { // for all three RGB values
-    analogWrite(REDPin + k, rgb[k]);
+void writeRGB(long* rgb, int startingPin){
+  int pin = startingPin;
+  for (int k=0; k<3; k++) { // for all three RGB values
+    if(pin == 4) pin++; // 4 is not a PWM pin. skip to 5 and 6.
+    analogWrite(pin, rgb[k]);
+    pin++;
   }
+}
+
+void writeBothRGB(long* rgb)
+{
+  writeRGB(rgb, LeftRedPin);
+  writeRGB(rgb, RightRedPin);
 }
