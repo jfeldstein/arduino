@@ -17,7 +17,7 @@ Stripes stripes(500); // Defaul stripe length
 int buttonState = 0;         // current command state
 int lastButtonState = 0;     // checked against for changes in command state
 const int BTN_CLICKED = 1;
-const int BTN_DOUBLECLICKED = 2;
+const int BTN_DOUBLE_CLICK = 2;
 const int BTN_HOLD = 3;
 const int BTN_LONG_HOLD = 4;
 
@@ -25,6 +25,8 @@ const int BTN_LONG_HOLD = 4;
 int ledState = 0; // off
 int maxLedState = 4;
 long* rgb;
+int UVState = LOW;
+
 
 void setup() {
   // initialize the LED pins as outputs:
@@ -61,6 +63,11 @@ void loop(){
     rgbHueCycle.resetState();
     
     Serial.println(ledState);
+  }
+  
+  if(buttonState == BTN_DOUBLE_CLICK)
+  {
+    toggleUV();
   }
   
   switch(ledState)
@@ -122,4 +129,10 @@ void writeBothRGB(long* rgb)
 {
   writeRGB(rgb, LeftRedPin);
   writeRGB(rgb, RightRedPin);
+}
+
+void toggleUV()
+{
+  UVState = !UVState;
+  digitalWrite(UVPin, UVState);
 }
