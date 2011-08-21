@@ -10,10 +10,11 @@ float *colorsHSV;
 float flashV;
 float flashS;
 int flashStep;
+const int flashDelay = 4;
 const int FLASHING_UP = 1;
 const int FLASHING_GLOW = 2;
 const int FLASHING_DOWN = 3;
-int glowTimer = 200;
+int glowTimer = 90;
 
 RGBHueCycle rgbHueCycle(15, 0, 0);
 
@@ -108,7 +109,7 @@ void loop(){
         }
         break;
     }
-    delay(10);
+    delay(flashDelay);
   }
   
   if(!isFlashing)
@@ -121,12 +122,12 @@ void loop(){
 
 float flashUpDelta(float v)
 {
-  return +0.001;
+  return +0.006;
 }
 
 float flashDownDelta(float v)
 {
-  return -0.001;
+  return -0.003;
 }
 
 void writeRGBVal(long rgbval)
